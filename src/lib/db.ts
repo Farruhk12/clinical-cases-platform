@@ -22,9 +22,10 @@ export function getSql() {
     throw new Error("DATABASE_URL is not set");
   }
   if (!globalForSql.sql) {
+    const onVercel = process.env.VERCEL === "1";
     globalForSql.sql = postgres(url, {
-      max: 12,
-      idle_timeout: 20,
+      max: onVercel ? 1 : 12,
+      idle_timeout: onVercel ? 5 : 20,
       connect_timeout: 30,
       prepare: false,
     });
