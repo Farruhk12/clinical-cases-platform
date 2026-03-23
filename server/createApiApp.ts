@@ -1,4 +1,3 @@
-import "dotenv/config";
 import type { Request, Response } from "express";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -61,10 +60,17 @@ export function createApiApp(options?: CreateApiAppOptions) {
         await sql`SELECT 1 AS x`;
         res.json({ ok: true, db: true });
       } catch (e) {
+        const msg = e instanceof Error ? e.message : "error";
+        console.error("[api/health] DB check failed:", msg);
         res.status(503).json({
           ok: false,
           db: false,
-          error: e instanceof Error ? e.message : "error",
+          error: msg,
+          hint: /getaddrinfo|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ETIMEDOUT/i.test(msg)
+            ? "DATABASE_URL не может подключиться. Используйте pooler строку из Supabase (порт 6543)."
+            : /DATABASE_URL/i.test(msg)
+              ? "Переменная DATABASE_URL не задана в Vercel Environment Variables."
+              : undefined,
         });
       }
     })();
