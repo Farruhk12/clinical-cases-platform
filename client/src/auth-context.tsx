@@ -1,0 +1,114 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+export type AuthUser = {
+  id: string;
+  login: string;
+  name: string | null;
+  role: "ADMIN" | "TEACHER";
+  departmentId: string | null;
+};
+
+type AuthContextValue = {
+  user: AuthUser | null;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  signIn: (
+    login: string,
+    password: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/auth/session");
+    const text = await res.text();
+    let j: { user: AuthUser | null } = { user: null };
+    if (text) {
+      try {
+        j = JSON.parse(text) as { user: AuthUser | null };
+      } catch {
+        /* ignore */
+      }
+    }
+    setUser(j.user ?? null);
+  }, []);
+
+  useEffect(() => {
+    void refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  const signIn = useCallback(
+    async (login: string, password: string) => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login, password }),
+        });
+        if (!res.ok) {
+          const raw = await res.text();
+          let msg: string | undefined;
+          if (raw) {
+            try {
+              const j = JSON.parse(raw) as { error?: string };
+              msg = typeof j.error === "string" ? j.error : undefined;
+            } catch {
+              /* ignore */
+            }
+          }
+          return {
+            ok: false as const,
+            error:
+              msg ??
+              (res.status === 502 || res.status === 503
+                ? "API недоступен: проверьте npm run dev и порт API."
+                : "Ошибка входа"),
+          };
+        }
+        await refresh();
+        return { ok: true as const };
+      } catch {
+        return {
+          ok: false as const,
+          error:
+            "Нет ответа от API. Часто это порт 3001 занят (EADDRINUSE) — закройте лишний процесс или задайте другой PORT в .env и перезапустите npm run dev.",
+        };
+      }
+    },
+    [refresh],
+  );
+
+  const signOut = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{ user, loading, refresh, signIn, signOut }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return ctx;
+}

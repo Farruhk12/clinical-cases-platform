@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Nunito Sans", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --background: #f4f6fb;
+  --foreground: #1e293b;
+  --foreground-soft: #475569;
+  --muted: #64748b;
+  --card: #ffffff;
+  --accent: #3d7d76;
+  --accent-light: #7eb8b0;
+  --accent-muted: #d8f0ec;
+  --border-soft: #e2e8f0;
+  --blob-1: #c7d7f0;
+  --blob-2: #b8e0d8;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .bg-mesh {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgb(184 224 216 / 0.35), transparent 50%),
+      radial-gradient(ellipse 70% 50% at 90% 10%, rgb(199 215 240 / 0.45), transparent 45%),
+      radial-gradient(ellipse 50% 40% at 50% 100%, rgb(216 240 236 / 0.3), transparent 50%);
+    background-attachment: fixed;
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(135deg, #2f6560 0%, #5a9a92 50%, #3d7d76 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.case-rich-root > [data-case-part] {
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 1rem 1rem 1rem 1.1rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+.case-rich-root > [data-case-part]:last-child {
+  margin-bottom: 0;
+}
+.case-rich-root > [data-case-part]::before {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  opacity: 0.75;
+}
+.case-rich-root > [data-case-part="narrator"] {
+  border: 1px solid #ddd6fe;
+  border-left-width: 4px;
+  border-left-color: #8b5cf6;
+  background: linear-gradient(
+    135deg,
+    rgb(245 243 255 / 0.95),
+    rgb(250 250 252 / 1)
+  );
+}
+.case-rich-root > [data-case-part="narrator"]::before {
+  content: "Повествование";
+  color: #6d28d9;
+}
+.case-rich-root > [data-case-part="doctor"] {
+  border: 1px solid #bae6fd;
+  border-left-width: 4px;
+  border-left-color: #0ea5e9;
+  background: linear-gradient(
+    135deg,
+    rgb(224 242 254 / 0.95),
+    rgb(248 250 252 / 1)
+  );
+}
+.case-rich-root > [data-case-part="doctor"]::before {
+  content: "Речь врача";
+  color: #0369a1;
+}
+.case-rich-root > [data-case-part="patient"] {
+  border: 1px solid #fde68a;
+  border-left-width: 4px;
+  border-left-color: #f59e0b;
+  background: linear-gradient(
+    135deg,
+    rgb(254 252 232 / 0.98),
+    rgb(255 251 235 / 1)
+  );
+}
+.case-rich-root > [data-case-part="patient"]::before {
+  content: "Речь пациента";
+  color: #b45309;
+}
