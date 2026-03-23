@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { downloadCasePptx } from "@/lib/downloadCasePptx";
 
 export function CaseRowActions({
   caseId,
@@ -12,7 +13,9 @@ export function CaseRowActions({
 }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [pptxBusy, setPptxBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pptxError, setPptxError] = useState<string | null>(null);
 
   async function deleteCase() {
     setError(null);
@@ -44,9 +47,17 @@ export function CaseRowActions({
     }
   }
 
+  async function exportPptx() {
+    setPptxError(null);
+    setPptxBusy(true);
+    const r = await downloadCasePptx(caseId, title);
+    setPptxBusy(false);
+    if (!r.ok) setPptxError(r.message);
+  }
+
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         <Link
           to={`/cases/${caseId}/edit`}
           className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
@@ -61,6 +72,15 @@ export function CaseRowActions({
         >
           {busy ? "Удаление..." : "Удалить"}
         </button>
+        <button
+          type="button"
+          disabled={pptxBusy}
+          onClick={() => void exportPptx()}
+          title="Слайды PowerPoint по этапам и блокам (как в базе)"
+          className="rounded-xl border-2 border-emerald-700 !bg-emerald-600 px-3.5 py-1.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-emerald-700 disabled:opacity-60"
+        >
+          {pptxBusy ? "PPTX…" : "Скачать PPTX"}
+        </button>
         <Link
           to={`/sessions/new?caseId=${caseId}`}
           className="rounded-xl bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
@@ -70,6 +90,9 @@ export function CaseRowActions({
       </div>
       {error ? (
         <p className="max-w-xs text-right text-xs text-red-600">{error}</p>
+      ) : null}
+      {pptxError ? (
+        <p className="max-w-xs text-right text-xs text-red-600">{pptxError}</p>
       ) : null}
     </div>
   );

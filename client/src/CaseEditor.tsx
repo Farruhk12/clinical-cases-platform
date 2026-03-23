@@ -8,6 +8,7 @@ type Case = CaseDetail;
 type CaseStage = CaseDetail["stages"][number];
 type StageBlock = CaseStage["blocks"][number];
 import { BlockView } from "@/components/block-view";
+import { downloadCasePptx } from "@/lib/downloadCasePptx";
 import { Link, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -68,6 +69,7 @@ export function CaseEditor({
   const [committingPreview, setCommittingPreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wipingSessions, setWipingSessions] = useState(false);
+  const [pptxBusy, setPptxBusy] = useState(false);
   const [liveSessionCount, setLiveSessionCount] = useState(sessionCount);
 
   useEffect(() => {
@@ -92,6 +94,15 @@ export function CaseEditor({
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function exportPptx() {
+    if (!data) return;
+    setPptxBusy(true);
+    setError(null);
+    const r = await downloadCasePptx(caseId, data.title);
+    if (!r.ok) setError(r.message);
+    setPptxBusy(false);
+  }
 
   async function deleteAllSessionsForCase() {
     if (liveSessionCount <= 0) return;
@@ -507,7 +518,7 @@ export function CaseEditor({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Link
           to="/cases"
           className="text-sm text-teal-700 hover:underline"
@@ -521,6 +532,15 @@ export function CaseEditor({
           className="rounded-md bg-teal-600 px-4 py-2 text-sm text-white hover:bg-teal-700 disabled:opacity-60"
         >
           {saving ? "Сохранение…" : "Сохранить"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void exportPptx()}
+          disabled={pptxBusy}
+          title="Экспорт текущего сохранённого в базе кейса в слайды PowerPoint"
+          className="rounded-md border-2 border-emerald-700 !bg-emerald-600 px-4 py-2 text-sm font-semibold !text-white shadow-sm hover:!bg-emerald-700 disabled:opacity-60"
+        >
+          {pptxBusy ? "Формирование…" : "Скачать PPTX"}
         </button>
       </div>
       {locked && (

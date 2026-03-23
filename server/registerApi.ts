@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { fetchCaseListForRole } from "../src/lib/case-list";
 import { loadCaseDetail } from "../src/lib/case-detail";
+import { buildCasePptxBuffer } from "../src/lib/case-export-pptx";
 import { asTransactionSql, getSql } from "../src/lib/db";
 import { requireUser, sendAuth, errorResponse } from "../src/lib/api-auth";
 import { isStaff, canManageCase } from "../src/lib/authz";
@@ -281,6 +282,49 @@ function registerCasesRoutes(app: Express) {
       sessionCount,
     });
   });
+
+  app.get(
+    "/api/cases/:caseId/export/pptx",
+    async (req: Request, res: Response) => {
+      const a = await requireUser(req);
+      if (sendAuth(res, a)) return;
+      const { session } = a;
+      const caseId = routeParam(req.params.caseId);
+      if (!caseId) return errorResponse(res, "Некорректный id кейса", 400);
+      const medicalCase = await loadCaseDetail(caseId);
+      if (!medicalCase) return errorResponse(res, "Кейс не найден", 404);
+      if (session.user.role === "TEACHER") {
+        if (!canManageCase(session, medicalCase.departmentId)) {
+          return errorResponse(res, "Нет доступа к кейсу", 403);
+        }
+      }
+      try {
+        const buffer = await buildCasePptxBuffer(medicalCase);
+        const utfName = `${medicalCase.title.trim() || "case"}.pptx`;
+        const asciiName = `case-${caseId.slice(0, 8)}.pptx`;
+        res.setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        );
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(utfName)}`,
+        );
+        res.send(buffer);
+      } catch (err) {
+        console.error("export/pptx", err);
+        const hint =
+          process.env.NODE_ENV !== "production" && err instanceof Error
+            ? `: ${err.message}`
+            : "";
+        return errorResponse(
+          res,
+          `Не удалось сформировать презентацию${hint}`,
+          500,
+        );
+      }
+    },
+  );
 
   app.patch("/api/cases/:caseId", async (req: Request, res: Response) => {
     const a = await requireUser(req);
